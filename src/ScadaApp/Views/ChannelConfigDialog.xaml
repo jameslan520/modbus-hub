@@ -73,6 +73,9 @@
                     <RowDefinition Height="40" />
                     <RowDefinition Height="40" />
                     <RowDefinition Height="40" />
+                    <RowDefinition Height="40" />
+                    <RowDefinition Height="40" />
+                    <RowDefinition Height="40" />
                     <RowDefinition />
                 </Grid.RowDefinitions>
 
@@ -122,9 +125,52 @@
                     Grid.Row="3"
                     HorizontalAlignment="Left"
                     Style="{StaticResource DialogFieldLabel}"
+                    Text="数据位" />
+                <ComboBox
+                    x:Name="DataBitsCombo"
+                    Grid.Row="3"
+                    Grid.Column="1"
+                    Grid.ColumnSpan="2"
+                    VerticalAlignment="Center"
+                    SelectedValue="{Binding DataBits}" />
+
+                <TextBlock
+                    Grid.Row="4"
+                    HorizontalAlignment="Left"
+                    Style="{StaticResource DialogFieldLabel}"
+                    Text="停止位" />
+                <ComboBox
+                    x:Name="StopBitsCombo"
+                    Grid.Row="4"
+                    Grid.Column="1"
+                    Grid.ColumnSpan="2"
+                    VerticalAlignment="Center"
+                    DisplayMemberPath="Text"
+                    SelectedValue="{Binding StopBits}"
+                    SelectedValuePath="Value" />
+
+                <TextBlock
+                    Grid.Row="5"
+                    HorizontalAlignment="Left"
+                    Style="{StaticResource DialogFieldLabel}"
+                    Text="校验位" />
+                <ComboBox
+                    x:Name="ParityCombo"
+                    Grid.Row="5"
+                    Grid.Column="1"
+                    Grid.ColumnSpan="2"
+                    VerticalAlignment="Center"
+                    DisplayMemberPath="Text"
+                    SelectedValue="{Binding Parity}"
+                    SelectedValuePath="Value" />
+
+                <TextBlock
+                    Grid.Row="6"
+                    HorizontalAlignment="Left"
+                    Style="{StaticResource DialogFieldLabel}"
                     Text="从机ID" />
                 <TextBox
-                    Grid.Row="3"
+                    Grid.Row="6"
                     Grid.Column="1"
                     Grid.ColumnSpan="2"
                     Padding="3,0,0,0"
@@ -132,18 +178,18 @@
                     Text="{Binding SlaveId, UpdateSourceTrigger=PropertyChanged}" />
 
                 <TextBlock
-                    Grid.Row="4"
+                    Grid.Row="7"
                     HorizontalAlignment="Left"
                     Style="{StaticResource DialogFieldLabel}"
                     Text="轮询间隔(ms)" />
                 <TextBox
-                    Grid.Row="4"
+                    Grid.Row="7"
                     Grid.Column="1"
                     Padding="3,0,0,0"
                     VerticalAlignment="Center"
                     Text="{Binding PollingIntervalMs, UpdateSourceTrigger=PropertyChanged}" />
                 <StackPanel
-                    Grid.Row="5"
+                    Grid.Row="8"
                     Grid.ColumnSpan="2"
                     Margin="0,10,0,10"
                     HorizontalAlignment="Right"

@@ -1,4 +1,5 @@
 using System.Collections.ObjectModel;
+using System.IO.Ports;
 using System.Windows;
 using System.Windows.Threading;
 using CommunityToolkit.Mvvm.ComponentModel;
@@ -188,7 +189,7 @@ public partial class MainViewModel : ObservableObject
     }
 
     [RelayCommand]
-    private void EditChannel()
+    private async Task EditChannel()
     {
         if (SelectedChannel == null)
         {
@@ -196,16 +197,53 @@ public partial class MainViewModel : ObservableObject
             return;
         }
 
+        var channel = SelectedChannel;
+        var config = channel.Config;
+        var wasRunning = _channelManager.GetRunningChannel(channel.Id) != null;
+        var serialBefore = SerialSnapshot(config);
+
         RefreshPorts();
-        if (!ChannelConfigDialog.Edit(SelectedChannel.Config, AvailablePorts, BaudRates))
+        if (!ChannelConfigDialog.Edit(config, AvailablePorts, BaudRates))
             return;
 
-        _channelManager.UpdateChannel(SelectedChannel.Config);
+        _channelManager.UpdateChannel(config);
         ConfigStorage.Save(_channelManager.Channels);
-        SelectedChannel.RefreshState();
+        channel.RefreshState();
         ReloadAllTags();
-        StatusText = $"已更新通道参数: {SelectedChannel.Name}";
+
+        // 串口参数变了必须重连才会生效（SerialPort 在打开时就固定了这些参数）；
+        // 只改名称 / 从机ID / 轮询间隔则不打断正在进行的采集。
+        if (!wasRunning || SerialSnapshot(config) == serialBefore)
+        {
+            StatusText = $"已更新通道参数: {channel.Name}";
+            return;
+        }
+
+        StatusText = $"{channel.Name} 串口参数已变更，正在重新连接...";
+        await _channelManager.StopChannelAsync(channel.Id);
+        try
+        {
+            await _channelManager.StartChannelAsync(channel.Id);
+            StatusText = $"已更新通道参数并重新连接: {channel.Name}";
+        }
+        catch (Exception ex)
+        {
+            StatusText = $"参数已保存，但重新连接失败: {ex.Message}";
+            MessageDialog.Alert("重新连接失败", $"{channel.Name} 参数已保存，但用新参数重新打开串口失败：\n\n{ex.Message}");
+        }
+
+        channel.RefreshState();
+        RefreshSummary();
+        ApplyConnectedStatusText();
     }
+
+    private static (string PortName, int BaudRate, int DataBits, Parity Parity, StopBits StopBits)
+        SerialSnapshot(ChannelConfig config) => (
+            config.PortName,
+            config.BaudRate,
+            config.DataBits,
+            config.Parity,
+            config.StopBits);
 
     [RelayCommand]
     private void AddTag()

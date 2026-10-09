@@ -1,7 +1,9 @@
+using System.IO.Ports;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Input;
 using ScadaApp.Models;
+using ScadaApp.Services;
 
 namespace ScadaApp.Views;
 
@@ -27,8 +29,43 @@ public partial class ChannelConfigDialog : Window
 
         PortCombo.ItemsSource = portList;
         BaudCombo.ItemsSource = baudRates;
+
+        DataBitsCombo.ItemsSource = SerialPortHelper.DataBitsOptions;
+
+        // Windows 上 1.5 停止位仅在「数据位=5」时可用，而本项目只提供 7/8 数据位，
+        // 暴露出来必然导致串口打开失败，因此不在界面上给出该选项。
+        StopBitsCombo.ItemsSource = SerialPortHelper.StopBitsOptions
+            .Where(s => s != StopBits.OnePointFive)
+            .Select(s => new StopBitsOption(DescribeStopBits(s), s))
+            .ToList();
+
+        ParityCombo.ItemsSource = SerialPortHelper.ParityOptions
+            .Select(p => new ParityOption(DescribeParity(p), p))
+            .ToList();
+
         DataContext = config;
     }
+
+    private static string DescribeStopBits(StopBits value) => value switch
+    {
+        StopBits.One => "1 位",
+        StopBits.Two => "2 位",
+        _ => value.ToString()
+    };
+
+    private static string DescribeParity(Parity value) => value switch
+    {
+        Parity.None => "无校验 (None)",
+        Parity.Odd => "奇校验 (Odd)",
+        Parity.Even => "偶校验 (Even)",
+        Parity.Mark => "校验位恒为 1 (Mark)",
+        Parity.Space => "校验位恒为 0 (Space)",
+        _ => value.ToString()
+    };
+
+    private sealed record StopBitsOption(string Text, StopBits Value);
+
+    private sealed record ParityOption(string Text, Parity Value);
 
     private void Header_MouseLeftButtonDown(object sender, MouseButtonEventArgs e)
     {
@@ -41,6 +78,9 @@ public partial class ChannelConfigDialog : Window
         PortCombo.GetBindingExpression(ComboBox.TextProperty)?.UpdateSource();
         PortCombo.GetBindingExpression(ComboBox.SelectedItemProperty)?.UpdateSource();
         BaudCombo.GetBindingExpression(ComboBox.SelectedItemProperty)?.UpdateSource();
+        DataBitsCombo.GetBindingExpression(ComboBox.SelectedValueProperty)?.UpdateSource();
+        StopBitsCombo.GetBindingExpression(ComboBox.SelectedValueProperty)?.UpdateSource();
+        ParityCombo.GetBindingExpression(ComboBox.SelectedValueProperty)?.UpdateSource();
 
         var port = (PortCombo.SelectedItem as string)?.Trim();
         if (string.IsNullOrWhiteSpace(port))
@@ -78,6 +118,9 @@ public partial class ChannelConfigDialog : Window
         string Name,
         string PortName,
         int BaudRate,
+        int DataBits,
+        StopBits StopBits,
+        Parity Parity,
         int PollingIntervalMs,
         byte SlaveId)
     {
@@ -85,6 +128,9 @@ public partial class ChannelConfigDialog : Window
             config.Name,
             config.PortName,
             config.BaudRate,
+            config.DataBits,
+            config.StopBits,
+            config.Parity,
             config.PollingIntervalMs,
             config.SlaveId);
 
@@ -93,6 +139,9 @@ public partial class ChannelConfigDialog : Window
             config.Name = Name;
             config.PortName = PortName;
             config.BaudRate = BaudRate;
+            config.DataBits = DataBits;
+            config.StopBits = StopBits;
+            config.Parity = Parity;
             config.PollingIntervalMs = PollingIntervalMs;
             config.SlaveId = SlaveId;
         }
